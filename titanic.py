@@ -15,9 +15,12 @@ class Titanic:
 
     def data_preprocess(self, data, mode='test'):
         # variables selection, normalization
-        data = data.dropna(axis=0)
+        cnt = data.count()
         data['Sex'] = data['Sex'].replace(['male', 'female'], [1, 0])
+        data['Age'] = data['Age'].fillna(0)
         data['Embarked'] = data['Embarked'].replace(['C', 'S', 'Q'], [0, 1, 2])
+        data['Embarked'] = data['Embarked'].fillna(3)
+        data['Fare'] = data['Fare'].fillna(0)
         feature = data[['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']]
         if mode == 'train':
             label = data['Survived']
@@ -29,7 +32,11 @@ class Titanic:
     def train(self):
         data = self.load_data('/Users/lyoung/PycharmProjects/ML/titanic/train.csv')
         feature, label = self.data_preprocess(data, 'train')
-        self.model = LogisticRegression(solver='liblinear', max_iter=100, multi_class='ovr', verbose=1).fit(feature, label)
+        self.model = LogisticRegression(
+            solver='liblinear',
+            max_iter=100, multi_class='ovr',
+            verbose=1
+        ).fit(feature, label)
 
     def test(self):
         data = self.load_data('/Users/lyoung/PycharmProjects/ML/titanic/test.csv')
