@@ -56,7 +56,7 @@ class Titanic:
             pre = self.model.predict(feature)
             prediction = pd.Series(data=pre, name='Survived').to_frame()
             result = pre_id.to_frame().join(prediction)
-            result.to_csv(path_or_buf='prediction.csv', index=False)
+            result.to_csv(path_or_buf='prediction_logistic.csv', index=False)
             return result
         else:
             print 'Model not exists.'
