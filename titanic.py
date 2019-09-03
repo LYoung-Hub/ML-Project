@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
@@ -11,7 +12,8 @@ def load_data(path):
 class Titanic:
 
     model = None
-    scaler = StandardScaler()
+    age_scaler = StandardScaler()
+    fare_scaler = StandardScaler()
 
     def __init__(self):
         pass
@@ -23,13 +25,15 @@ class Titanic:
         data['Embarked'] = data['Embarked'].replace(['C', 'S', 'Q'], [0, 1, 2])
         data['Embarked'] = data['Embarked'].fillna(3)
         data['Fare'] = data['Fare'].fillna(data['Fare'].median())
-        feature = data[['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']]
+        feature = data[['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']].values
         if mode == 'train':
-            feature = self.scaler.fit_transform(feature)
+            feature[:, 2] = np.reshape(self.age_scaler.fit_transform(np.reshape(feature[:, 2], (-1, 1))), (-1))
+            feature[:, 5] = np.reshape(self.fare_scaler.fit_transform(np.reshape(feature[:, 5], (-1, 1))), (-1))
             label = data['Survived']
             return feature, label
         else:
-            feature = self.scaler.transform(feature)
+            feature[:, 2] = np.reshape(self.age_scaler.transform(np.reshape(feature[:, 2], (-1, 1))), (-1))
+            feature[:, 5] = np.reshape(self.age_scaler.transform(np.reshape(feature[:, 5], (-1, 1))), (-1))
             p_id = data['PassengerId']
             return feature, p_id
 
