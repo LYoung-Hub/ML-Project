@@ -4,6 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from keras.layers import Dense, Input
 from keras.models import Model, load_model
 from keras.optimizers import Adam
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 
 
 def load_data(path):
@@ -15,6 +16,11 @@ def modify_csv(path):
     pre = pd.read_csv(path)
     pre['Survived'] = pd.Series(data=pre['Survived'], dtype=int)
     pre.to_csv(path_or_buf='prediction_dnn.csv', index=False)
+
+
+def cal_ratio():
+    data = load_data('/Users/lyoung/PycharmProjects/ML/titanic/train.csv')
+    return data['Survived'].mean()
 
 
 class Titanic:
@@ -39,8 +45,8 @@ class Titanic:
             label = data['Survived']
             return feature, label
         else:
-            feature[:, 2] = np.reshape(self.age_scaler.transform(np.reshape(feature[:, 2], (-1, 1))), (-1))
-            feature[:, 5] = np.reshape(self.age_scaler.transform(np.reshape(feature[:, 5], (-1, 1))), (-1))
+            feature[:, 2] = np.reshape(self.age_scaler.fit_transform(np.reshape(feature[:, 2], (-1, 1))), (-1))
+            feature[:, 5] = np.reshape(self.age_scaler.fit_transform(np.reshape(feature[:, 5], (-1, 1))), (-1))
             p_id = data['PassengerId']
             return feature, p_id
 
@@ -52,7 +58,7 @@ class Titanic:
         input_data = Input(shape=(7, ))
         d1 = Dense(
             units=32,
-            activation='relu',
+            activation='relu'
         )(input_data)
 
         d2 = Dense(
@@ -61,42 +67,95 @@ class Titanic:
         )(d1)
 
         d3 = Dense(
-            units=16,
+            units=32,
             activation='relu'
         )(d2)
 
         d4 = Dense(
-            units=8,
+            units=32,
             activation='relu'
         )(d3)
 
-        d5 = Dense(
-            units=4,
+        # d5 = Dense(
+        #     units=32,
+        #     activation='relu'
+        # )(d4)
+        #
+        # d6 = Dense(
+        #     units=32,
+        #     activation='relu'
+        # )(d5)
+        #
+        # d7 = Dense(
+        #     units=32,
+        #     activation='relu'
+        # )(d6)
+
+        d8 = Dense(
+            units=16,
             activation='relu'
         )(d4)
+
+        d9 = Dense(
+            units=8,
+            activation='relu'
+        )(d8)
+
+        d10 = Dense(
+            units=4,
+            activation='relu'
+        )(d9)
 
         output = Dense(
             units=1,
             activation='sigmoid'
-        )(d5)
+        )(d10)
 
         model = Model(input_data, output)
+        model.summary()
 
-        adam = Adam(lr=0.001)
+        adam = Adam(lr=0.0001)
         model.compile(
             optimizer=adam,
-            loss='logcosh',
+            loss='mse',
             metrics=['accuracy']
         )
+
+        # callbacks
+        callbacks = [
+            ModelCheckpoint(
+                filepath='models/best_model.hdf5',
+                save_best_only=True,
+                verbose=1,
+                period=1,
+                mode='auto',
+                monitor='val_acc'
+            ),
+            EarlyStopping(
+                monitor='val_loss',
+                patience=100,
+                mode='auto',
+                verbose=1
+            ),
+            ReduceLROnPlateau(
+                monitor='accuracy',
+                patience=50,
+                factor=0.1,
+                mode='auto',
+                min_lr=0.0,
+                verbose=1
+            )
+        ]
 
         model.fit(
             x=feature,
             y=label,
-            batch_size=16,
-            epochs=100,
+            batch_size=1,
+            epochs=10000,
             verbose=1,
+            shuffle=True,
             validation_split=0.3,
-            shuffle=True
+            callbacks=callbacks
         )
 
         model.save('model_dnn.hdf5')
@@ -106,13 +165,14 @@ class Titanic:
         feature, p_id = self.data_pre_process(data)
         pre_id = p_id.reset_index(drop=True)
 
-        model = load_model('model_dnn.hdf5')
+        model = load_model('models/best_model.hdf5')
         pre = model.predict(feature)
 
         # change to acceptable result
         pre = np.reshape(pre, 418)
+        ratio = cal_ratio()
         for i in range(0, 418):
-            if pre[i] < 0.5:
+            if pre[i] < ratio:
                 pre[i] = 0
                 pre[i] = int(pre[i])
             else:
