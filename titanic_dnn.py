@@ -19,7 +19,7 @@ def modify_csv(path):
 
 
 def cal_ratio():
-    data = load_data('/Users/lyoung/PycharmProjects/ML/titanic/train.csv')
+    data = load_data('titanic/train.csv')
     return data['Survived'].mean()
 
 
@@ -51,65 +51,50 @@ class Titanic:
             return feature, p_id
 
     def train(self):
-        data = load_data('/Users/lyoung/PycharmProjects/ML/titanic/train.csv')
+        data = load_data('titanic/train.csv')
         feature, label = self.data_pre_process(data, 'train')
 
         # model structure
         input_data = Input(shape=(7, ))
-        d1 = Dense(
-            units=32,
+        d = Dense(
+            units=128,
             activation='relu'
         )(input_data)
 
-        d2 = Dense(
+        for i in range(0, 20):
+            d = Dense(
+                units=128,
+                activation='relu'
+            )(d)
+        d = Dense(
+            units=64,
+            activation='relu'
+        )(d)
+
+        d = Dense(
             units=32,
             activation='relu'
-        )(d1)
+        )(d)
 
-        d3 = Dense(
-            units=32,
-            activation='relu'
-        )(d2)
-
-        d4 = Dense(
-            units=32,
-            activation='relu'
-        )(d3)
-
-        # d5 = Dense(
-        #     units=32,
-        #     activation='relu'
-        # )(d4)
-        #
-        # d6 = Dense(
-        #     units=32,
-        #     activation='relu'
-        # )(d5)
-        #
-        # d7 = Dense(
-        #     units=32,
-        #     activation='relu'
-        # )(d6)
-
-        d8 = Dense(
+        d = Dense(
             units=16,
             activation='relu'
-        )(d4)
+        )(d)
 
-        d9 = Dense(
+        d = Dense(
             units=8,
             activation='relu'
-        )(d8)
+        )(d)
 
-        d10 = Dense(
+        d = Dense(
             units=4,
             activation='relu'
-        )(d9)
+        )(d)
 
         output = Dense(
             units=1,
             activation='sigmoid'
-        )(d10)
+        )(d)
 
         model = Model(input_data, output)
         model.summary()
@@ -129,17 +114,17 @@ class Titanic:
                 verbose=1,
                 period=1,
                 mode='auto',
-                monitor='val_acc'
+                monitor='val_loss'
             ),
             EarlyStopping(
                 monitor='val_loss',
-                patience=100,
+                patience=20,
                 mode='auto',
                 verbose=1
             ),
             ReduceLROnPlateau(
-                monitor='accuracy',
-                patience=50,
+                monitor='val_loss',
+                patience=10,
                 factor=0.1,
                 mode='auto',
                 min_lr=0.0,
@@ -152,16 +137,16 @@ class Titanic:
             y=label,
             batch_size=1,
             epochs=10000,
-            verbose=1,
             shuffle=True,
             validation_split=0.3,
-            callbacks=callbacks
+            callbacks=callbacks,
+            verbose=1
         )
 
         model.save('model_dnn.hdf5')
 
     def test(self):
-        data = load_data('/Users/lyoung/PycharmProjects/ML/titanic/test.csv')
+        data = load_data('titanic/test.csv')
         feature, p_id = self.data_pre_process(data)
         pre_id = p_id.reset_index(drop=True)
 
